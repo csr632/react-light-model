@@ -1,0 +1,42 @@
+{
+  "name": "package-name",
+  "version": "1.0.0",
+  "description": "",
+  "main": "out/index.js",
+  "scripts": {
+    "dev": "vite serve -c ./vite.config.ts",
+    "debug": "node --inspect ./node_modules/vite/bin/vite serve -c ./vite.config.ts",
+    "cp": "copyfiles -u 2 \"./workspace/src/**/*.css\" ./out",
+    "prepare": "rm -rf ./out && tsc -p ./workspace/src && npm run cp"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "homepage": "https://github.com/csr632/codesandbox-workspace",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/csr632/codesandbox-workspace"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {},
+  "devDependencies": {
+    "@types/react": "^16.9.46",
+    "@types/react-dom": "^16.9.8",
+    "@types/react-router-dom": "^5.1.5",
+    "copyfiles": "^2.3.0",
+    "react": "^16.13.1",
+    "react-dom": "^16.13.1",
+    "styled-components": "^5.1.1",
+    "typescript": "^3.9.7",
+    "@mdx-js/react": "^1.6.16",
+    "@pika/react": "^16.13.1",
+    "@pika/react-dom": "^16.13.1",
+    "react-router-dom": "^5.2.0",
+    "vite-pages-theme-basic": "^0.8.8",
+    "vite": "^1.0.0-rc.4",
+    "vite-plugin-mdx": "^0.3.7",
+    "vite-plugin-react": "^3.0.2",
+    "vite-plugin-react-pages": "^0.7.2"
+  }
+}
