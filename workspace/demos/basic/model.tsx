@@ -2,6 +2,7 @@ import { createModel } from "../../src";
 
 const model = createModel({
   state: {
+    /** Comment for num */
     num: 1,
     obj: {
       str: "123",
@@ -22,16 +23,19 @@ const model = createModel({
   },
   effects: {
     async asyncFn() {
-      model.effects.asyncFn();
-      // this.
-      // console.log("before add", this.get().num);
-      // await delay(1000);
-      // this.reducers.add();
-      // console.log("after add", this.get().num);
-      // await delay(1000);
-      // this.reducers.subtract(10, true);
-      // console.log("after subtract", this.get().num);
+      console.log("before add", model.get().num);
+      await delay(1000);
+      model.reducers.add();
+      console.log("after add", model.get().num);
+      await delay(1000);
+      model.reducers.subtract(10, true);
+      console.log("after subtract", model.get().num);
+      model.effects.asyncFn2("param");
     },
+    /**
+     * Comment for asyncFn2
+     */
+    asyncFn2(param: string) {},
   },
 });
 

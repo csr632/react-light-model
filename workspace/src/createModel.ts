@@ -1,7 +1,9 @@
-import { Object, Any, Function } from "ts-toolbelt";
+import type { O, Any, Function } from "ts-toolbelt";
+import { produce } from "immer";
+import type { Draft } from "immer";
 
 type IReducer<State, Payload extends any[] = any[]> = (
-  prev: Function.NoInfer<State>,
+  prev: Function.NoInfer<Draft<State>>,
   ...payload: Payload
 ) => Function.NoInfer<State> | void;
 
@@ -31,7 +33,7 @@ interface IModelDefinition<
   effects: Effects;
 }
 
-interface IEffects {
+export interface IEffects {
   [key: string]: IEffect;
 }
 
@@ -42,7 +44,7 @@ type IModel<
   Reducers extends IReducers<State>,
   Effects extends IEffects
 > = {
-  get: () => Object.Readonly<State, Any.Key, "deep">;
+  get: () => O.Readonly<State, Any.Key, "deep">;
   reducers: IReducerCallers<Function.NoInfer<Reducers>>;
   effects: Effects;
 };
@@ -54,7 +56,45 @@ export function createModel<
 >(
   modelDefinition: IModelDefinition<State, Reducers, Effects>
 ): IModel<State, Reducers, Effects> {
+  if (!isObject(modelDefinition.state))
+    throw new Error(`model should contains state`);
+  if (!isObject(modelDefinition.reducers))
+    throw new Error(`model should contains reducers`);
+  if (!isObject(modelDefinition.effects))
+    throw new Error(`model should contains effects`);
+
+  let state = modelDefinition.state;
+  let listeners: Set<() => void> = new Set();
+
+  const setState = (producer: (draft: Draft<State>) => State | void) => {
+    const nextState = produce(state, producer) as State;
+    if (nextState === state) return;
+    state = nextState;
+    listeners.forEach((listener) => listener());
+  };
+
+  const reducerCallers = (Object.fromEntries(
+    Object.entries(modelDefinition.reducers).map(([key, reducer]) => {
+      return [
+        key,
+        (...args: any[]) => {
+          setState((draft) => {
+            return reducer(draft, ...args);
+          });
+        },
+      ];
+    })
+  ) as unknown) as IReducerCallers<Reducers>;
+
+  const effects = modelDefinition.effects;
+
+  // const subscribe = 
+
   return 1 as any;
 }
 
 export function useCreateModel() {}
+
+function isObject(value: unknown) {
+  return typeof value === "object" && value !== null;
+}
