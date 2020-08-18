@@ -1,6 +1,8 @@
-import type { O, Any, Function } from "ts-toolbelt";
+import type { Function } from "ts-toolbelt";
 import { produce } from "immer";
 import type { Draft } from "immer";
+import createStore from "zustand";
+import type { StateSelector, EqualityChecker } from "zustand";
 
 type IReducer<State, Payload extends any[] = any[]> = (
   prev: Function.NoInfer<Draft<State>>,
@@ -39,15 +41,21 @@ export interface IEffects {
 
 type IEffect = (...args: any[]) => any | Promise<any>;
 
-type IModel<
+type IModelAPI<
   State extends object,
   Reducers extends IReducers<State>,
   Effects extends IEffects
 > = {
-  get: () => O.Readonly<State, Any.Key, "deep">;
+  getState: () => State;
   reducers: IReducerCallers<Function.NoInfer<Reducers>>;
   effects: Effects;
+  // subscribe: Subscribe<State>;
 };
+
+export interface IUseModel<State extends object> {
+  (): State;
+  <U>(selector: StateSelector<State, U>, equalityFn?: EqualityChecker<U>): U;
+}
 
 export function createModel<
   State extends object,
@@ -55,7 +63,7 @@ export function createModel<
   Effects extends IEffects
 >(
   modelDefinition: IModelDefinition<State, Reducers, Effects>
-): IModel<State, Reducers, Effects> {
+): [IUseModel<State>, IModelAPI<State, Reducers, Effects>] {
   if (!isObject(modelDefinition.state))
     throw new Error(`model should contains state`);
   if (!isObject(modelDefinition.reducers))
@@ -63,37 +71,40 @@ export function createModel<
   if (!isObject(modelDefinition.effects))
     throw new Error(`model should contains effects`);
 
-  let state = modelDefinition.state;
-  let listeners: Set<() => void> = new Set();
-
-  const setState = (producer: (draft: Draft<State>) => State | void) => {
-    const nextState = produce(state, producer) as State;
-    if (nextState === state) return;
-    state = nextState;
-    listeners.forEach((listener) => listener());
-  };
+  const useStore = createStore(() => modelDefinition.state);
+  const storeAPI = useStore;
 
   const reducerCallers = (Object.fromEntries(
     Object.entries(modelDefinition.reducers).map(([key, reducer]) => {
       return [
         key,
         (...args: any[]) => {
-          setState((draft) => {
-            return reducer(draft, ...args);
-          });
+          storeAPI.setState(
+            produce((draft) => {
+              return reducer(draft, ...args);
+            })
+          );
         },
       ];
     })
   ) as unknown) as IReducerCallers<Reducers>;
-
   const effects = modelDefinition.effects;
 
-  // const subscribe = 
-
-  return 1 as any;
+  function useModel<U>(
+    selector: StateSelector<State, U>,
+    equalityFn?: EqualityChecker<U>
+  ): U;
+  function useModel(): State;
+  function useModel(selector?: any, equalityFn?: any) {
+    return useStore(selector, equalityFn);
+  }
+  const modelApi: IModelAPI<State, Reducers, Effects> = {
+    getState: storeAPI.getState,
+    reducers: reducerCallers,
+    effects,
+  };
+  return [useModel, modelApi];
 }
-
-export function useCreateModel() {}
 
 function isObject(value: unknown) {
   return typeof value === "object" && value !== null;

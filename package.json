@@ -21,7 +21,8 @@
   "license": "ISC",
   "dependencies": {
     "immer": "^7.0.7",
-    "ts-toolbelt": "^6.15.5"
+    "ts-toolbelt": "^6.15.5",
+    "zustand": "^3.0.1"
   },
   "devDependencies": {
     "@mdx-js/react": "^1.6.16",
