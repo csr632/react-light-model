@@ -1,14 +1,9 @@
-import React, {
-  // @ts-ignore
-  unstable_createMutableSource as createMutableSource,
-  // @ts-ignore
-  unstable_useMutableSource as useMutableSource,
-  useCallback,
-  useRef,
-  useMemo,
-  useContext,
-} from "react";
+// we should use useMutableSource instead of use-subscription
+// useMutableSource is still in react@experimental
+
+import React, { useCallback, useRef, useMemo, useContext } from "react";
 import { BehaviorSubject } from "rxjs";
+import { useSubscription } from "use-subscription";
 
 export interface IAtom<State, Actions> {
   _: {
@@ -93,7 +88,14 @@ export function createAtomStore(): IAtomStore {
       atom: IAtom<State, Actions>
     ): IAtomInstance<State, Actions> {
       const subject = new BehaviorSubject(atom._.initialState);
-      const source = createMutableSource(subject, () => subject.getValue());
+      // const source = createMutableSource(subject, () => subject.getValue());
+      const source = {
+        getCurrentValue: () => subject.getValue(),
+        subscribe: (callback: any) => {
+          const subscription = subject.subscribe(callback);
+          return () => subscription.unsubscribe();
+        },
+      };
       const actions = atom._.createActions({
         get: () => subject.getValue(),
         set: (updater) => {
@@ -127,22 +129,7 @@ export function createAtomStore(): IAtomStore {
 
   function useAtomValue<State, Actions>(atom: IAtom<State, Actions>) {
     const atomInstance = useAtomInstance(atom);
-    const getSnapshot = useCallback(
-      (subject: BehaviorSubject<State>) => subject.getValue(),
-      []
-    );
-    const subscribe = useCallback(
-      (subject: BehaviorSubject<State>, callback) => {
-        const subscription = subject.subscribe(callback);
-        return () => subscription.unsubscribe();
-      },
-      []
-    );
-    const atomValue = useMutableSource(
-      atomInstance._.source,
-      getSnapshot,
-      subscribe
-    );
+    const atomValue = useSubscription(atomInstance._.source);
     return atomValue;
   }
 

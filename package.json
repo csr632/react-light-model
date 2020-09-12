@@ -20,28 +20,27 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "immer": "^7.0.7",
     "rxjs": "^7.0.0-beta.5",
-    "ts-toolbelt": "^6.15.5",
-    "zustand": "^3.0.1"
+    "use-subscription": "^1.4.1"
   },
   "devDependencies": {
     "@mdx-js/react": "^1.6.16",
     "@pika/react": "^16.13.1",
     "@pika/react-dom": "^16.13.1",
-    "@types/react": "^16.9.46",
+    "@types/react": "^16.9.49",
     "@types/react-dom": "^16.9.8",
     "@types/react-router-dom": "^5.1.5",
+    "@types/use-subscription": "^1.0.0",
     "copyfiles": "^2.3.0",
     "react": "^16.13.1",
     "react-dom": "^16.13.1",
     "react-router-dom": "^5.2.0",
-    "styled-components": "^5.1.1",
-    "typescript": "^3.9.7",
+    "styled-components": "^5.2.0",
+    "typescript": "^4.0.2",
     "vite": "^1.0.0-rc.4",
-    "vite-pages-theme-basic": "^0.8.8",
-    "vite-plugin-mdx": "^0.3.7",
+    "vite-pages-theme-basic": "^0.9.1",
+    "vite-plugin-mdx": "^0.4.0",
     "vite-plugin-react": "^3.0.2",
-    "vite-plugin-react-pages": "^0.7.2"
+    "vite-plugin-react-pages": "^0.8.0"
   }
 }
