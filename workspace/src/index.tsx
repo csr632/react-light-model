@@ -1,1 +1,2 @@
-export { atom, createAtomStore } from "./model";
+export { createAtomStore } from "./store";
+export { atom } from "./atom";
