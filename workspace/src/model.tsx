@@ -36,7 +36,7 @@ export function atom<State, Actions>(
 }
 
 export interface IAtomStore {
-  useAtomValue: <State, Actions>(atom: IAtom<State, Actions>) => any;
+  useAtomValue: <State, Actions>(atom: IAtom<State, Actions>) => State;
   Provider: React.FC<{}>;
   withProvider: <Props extends unknown>(
     Wrapped: React.ComponentType<Props>
@@ -129,7 +129,7 @@ export function createAtomStore(): IAtomStore {
 
   function useAtomValue<State, Actions>(atom: IAtom<State, Actions>) {
     const atomInstance = useAtomInstance(atom);
-    const atomValue = useSubscription(atomInstance._.source);
+    const atomValue: State = useSubscription(atomInstance._.source);
     return atomValue;
   }
 
