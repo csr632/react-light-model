@@ -4,7 +4,7 @@ This is a template for developing a JavaScript/Typescript library. It supports u
 
 ## develop in browser, with CodeSandbox
 
-This project can be opened with [CodeSandbox](https://codesandbox.io/s/github/csr632/codesandbox-workspace/tree/master/workspace?moduleview=1&file=/demos/demo2/index$.tsx).
+This project can be opened with [CodeSandbox](https://codesandbox.io/s/github/csr632/react-light-model/tree/master/workspace?moduleview=1&file=/demos/demo2/index$.tsx).
 
 The advantage of CodeSandbox approach is that, **you can open and edit the project in browser**, and **you can easily share the link with others**.
 
