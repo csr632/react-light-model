@@ -4,6 +4,11 @@ export function atom<State, Actions>(
   initialState: State,
   createActions: ICreateActions<State, Actions>
 ): IAtom<State, Actions> {
+  // Atom hold reference to atomInstances
+  // instead of store hold reference to atomInstances.
+  // This is good for garbage collecting.
+  // When no one holde the reference to atom,
+  // All atomInstances will be garbage-collected.
   const instances: {
     [storeId: number]: IAtomInstance<State, Actions>;
   } = {};

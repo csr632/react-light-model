@@ -1,13 +1,7 @@
 // we should use useMutableSource instead of use-subscription
 // useMutableSource is still in react@experimental
 
-import React, {
-  useRef,
-  useMemo,
-  useContext,
-  useState,
-  useEffect,
-} from "react";
+import React, { useRef, useMemo, useContext, useState, useEffect } from "react";
 import { useSubscription } from "use-subscription";
 import type { IAtom, IAtomInstance } from "./atom";
 
@@ -45,6 +39,8 @@ export function createAtomStore(): IAtomStore {
     }, []);
 
     useEffect(() => {
+      // When the store component is unmounted.
+      // All atomInstances in it should be garbage-collected.
       atoms.current.forEach((atom) => {
         atom._.deleteFromStore(storeId);
       });
