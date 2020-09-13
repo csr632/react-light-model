@@ -1,12 +1,11 @@
 import { BehaviorSubject } from "rxjs";
-import { atomBase, IAtom, IAtomInstance, getNextAtomInstanceId } from "./atom";
+import { atomBase, getNextAtomInstanceId } from "./atom";
+import { IAtom, IAtomInstance } from "./atom";
 import { AtomStore } from "./store";
-
-type GetAtomValue = <State>(atom: IAtom<State, any>) => State;
 
 export function derive<State, Actions>(
   getter: (getAtomValue: GetAtomValue) => State,
-  actions: Actions
+  createActions: ICreateActions<State, Actions>
 ): IAtom<State, Actions> {
   return atomBase(initialize);
 
@@ -18,6 +17,11 @@ export function derive<State, Actions>(
     } = {};
     const initialState = computeValue();
     const subject = new BehaviorSubject(initialState);
+    const actions = createActions({
+      get,
+      getActions,
+    });
+
     return {
       _: {
         id: getNextAtomInstanceId(),
@@ -26,6 +30,15 @@ export function derive<State, Actions>(
         actions,
       },
     };
+
+    function get(otherAtom?: IAtom<any, any>) {
+      if (!otherAtom) return getCurrentValue();
+      return store.getAtomInstance(otherAtom)._.getCurrentValue();
+    }
+
+    function getActions(otherAtom: IAtom<any, any>) {
+      return store.getAtomInstance(otherAtom)._.actions;
+    }
 
     // compute value and collect deps
     function computeValue() {
@@ -66,3 +79,14 @@ export function derive<State, Actions>(
     }
   }
 }
+
+type GetAtomValue = <State>(atom: IAtom<State, any>) => State;
+export type ICreateActions<State, Actions> = (helpers: {
+  get: {
+    (): State;
+    <OtherAtomState>(atom: IAtom<OtherAtomState, any>): OtherAtomState;
+  };
+  getActions: <OtherAtomActions>(
+    atom: IAtom<any, OtherAtomActions>
+  ) => OtherAtomActions;
+}) => Actions;
