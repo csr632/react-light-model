@@ -1,8 +1,8 @@
-import { atom } from "../../src";
+import { atom, derive } from "../../src";
 
 export const counterAtom = atom(
   {
-    val: 1,
+    val: 1
   },
   ({ get, set }) => {
     const inc = (amount: number) => {
@@ -18,11 +18,14 @@ export const counterAtom = atom(
         console.log("asyncInc", "before inc", get());
         inc(amount);
         console.log("asyncInc", "after inc", get());
-      },
+      }
     };
   }
 );
 
-// const doubleModule = derived((store) => {
-//   return { age: 2020 - store.get(birthYearToken) };
-// });
+export const doubleCounterAtom = derive(
+  (get) => {
+    return { val: get(counterAtom).val * 2 };
+  },
+  () => null
+);
