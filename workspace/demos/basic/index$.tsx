@@ -7,8 +7,7 @@ const store = createAtomStore();
 interface IProps {}
 
 const Demo: React.FC<IProps> = store.withProvider((props) => {
-  const state = store.useAtomValue(counterAtom);
-  const actions = store.useAtomActions(counterAtom);
+  const [state, actions] = store.useAtom(counterAtom);
   return (
     <div>
       <h2>Basic demo</h2>

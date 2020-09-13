@@ -8,10 +8,13 @@ import type { IAtom, IAtomInstance } from "./atom";
 export interface IAtomStore {
   useAtomValue: <State, Actions>(atom: IAtom<State, Actions>) => State;
   Provider: React.FC<{}>;
+  useAtomActions: <State, Actions>(atom: IAtom<State, Actions>) => Actions;
+  useAtom<State, Actions>(
+    atom: IAtom<State, Actions>
+  ): readonly [State, Actions];
   withProvider: <Props extends unknown>(
     Wrapped: React.ComponentType<Props>
   ) => React.FC<Props>;
-  useAtomActions: <State, Actions>(atom: IAtom<State, Actions>) => Actions;
 }
 
 let nextStoreId = 1;
@@ -74,6 +77,10 @@ export function createAtomStore(): IAtomStore {
     return atomInstance._.actions;
   }
 
+  function useAtom<State, Actions>(atom: IAtom<State, Actions>) {
+    return [useAtomValue(atom), useAtomActions(atom)] as const;
+  }
+
   function useAtomInstance<State, Actions>(atom: IAtom<State, Actions>) {
     const ctxValue = useContext(storeCtx);
     if (!ctxValue) {
@@ -85,7 +92,7 @@ export function createAtomStore(): IAtomStore {
     return atomInstance;
   }
 
-  return { Provider, withProvider, useAtomValue, useAtomActions };
+  return { Provider, withProvider, useAtomValue, useAtomActions, useAtom };
 }
 
 function createSingletonAtomStore() {}
