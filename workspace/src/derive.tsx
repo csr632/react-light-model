@@ -1,4 +1,4 @@
-import { BehaviorSubject } from "rxjs";
+import { Subject } from "rxjs";
 import { atomBase, getNextAtomInstanceId } from "./atom";
 import { IAtom, IAtomInstance } from "./atom";
 import { AtomStore } from "./store";
@@ -16,7 +16,8 @@ export function derive<State, Actions>(
       };
     } = {};
     const initialState = computeValue();
-    const subject = new BehaviorSubject(initialState);
+    let currentValue = initialState;
+    const subject = new Subject();
     const actions = createActions({
       get,
       getActions,
@@ -56,7 +57,8 @@ export function derive<State, Actions>(
             unsubscribe: newDeps[newDepId]._.subscribe(() => {
               const nextValue = computeValue();
               if (nextValue !== getCurrentValue()) {
-                subject.next(nextValue);
+                currentValue = nextValue;
+                subject.next(null);
               }
             }),
           };
@@ -71,7 +73,7 @@ export function derive<State, Actions>(
       }
     }
     function getCurrentValue() {
-      return subject.getValue();
+      return currentValue;
     }
     function subscribe(callback: any) {
       const subscription = subject.subscribe(callback);

@@ -1,4 +1,4 @@
-import { BehaviorSubject } from "rxjs";
+import { Subject } from "rxjs";
 import { AtomStore } from "./store";
 
 let nextAtomInstanceId = 1;
@@ -13,8 +13,9 @@ export function atom<State, Actions>(
   return atomBase(initialize);
 
   function initialize(): IAtomInstance<State, Actions> {
-    const subject = new BehaviorSubject(initialState);
-    const getCurrentValue = () => subject.getValue();
+    let currentValue = initialState;
+    const subject = new Subject();
+    const getCurrentValue = () => currentValue;
     const subscribe = (callback: any) => {
       const subscription = subject.subscribe(callback);
       return () => subscription.unsubscribe();
@@ -23,14 +24,16 @@ export function atom<State, Actions>(
     const actions = createActions({
       get: getCurrentValue,
       set: (updater) => {
-        const currentValue = subject.getValue();
         let nextValue: State;
         if (isFnUpdater(updater)) {
           nextValue = updater(currentValue);
         } else {
           nextValue = updater;
         }
-        if (nextValue !== currentValue) subject.next(nextValue);
+        if (nextValue !== currentValue) {
+          currentValue = nextValue;
+          subject.next(null);
+        }
 
         function isFnUpdater(v: any): v is (prev: State) => State {
           return typeof v === "function";

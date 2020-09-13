@@ -5,6 +5,7 @@
   "main": "out/index.js",
   "scripts": {
     "dev": "vite serve -c ./vite.config.ts",
+    "parcel": "parcel serve ./index.html",
     "debug": "node --inspect ./node_modules/vite/bin/vite serve -c ./vite.config.ts",
     "cp": "copyfiles -u 2 \"./workspace/src/**/*.css\" ./out",
     "prepare": "rm -rf ./out && tsc -p ./workspace/src && npm run cp"
@@ -32,6 +33,7 @@
     "@types/react-router-dom": "^5.1.5",
     "@types/use-subscription": "^1.0.0",
     "copyfiles": "^2.3.0",
+    "parcel": "^2.0.0-beta.1",
     "react": "^16.13.1",
     "react-dom": "^16.13.1",
     "react-router-dom": "^5.2.0",

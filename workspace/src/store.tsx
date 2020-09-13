@@ -34,7 +34,7 @@ export function createAtomStore(): IAtomStore {
     useEffect(() => {
       // When the store component is unmounted,
       // all atomInstances in it should be garbage-collected.
-      storeInstance.destroy();
+      return () => storeInstance.destroy();
     }, []);
 
     return (
