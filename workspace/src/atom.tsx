@@ -1,44 +1,16 @@
 import { BehaviorSubject } from "rxjs";
+import { AtomStore } from "./store";
+
+let nextAtomInstanceId = 1;
+export function getNextAtomInstanceId() {
+  return nextAtomInstanceId++;
+}
 
 export function atom<State, Actions>(
   initialState: State,
   createActions: ICreateActions<State, Actions>
 ): IAtom<State, Actions> {
-  // Conceptually, atomInstances lives in atomStore,
-  // but in implementation,
-  // atom hold reference to all its atomInstances
-  // instead of store hold reference to atomInstances.
-  // This is good for garbage collection:
-  // When no one hold the reference to atom,
-  // all atomInstances of it will be garbage-collected.
-  const instances: {
-    [storeId: number]: IAtomInstance<State, Actions>;
-  } = {};
-
-  return {
-    _: {
-      // initialize,
-      getFromStore,
-      alreadyInStore,
-      deleteFromStore,
-    },
-  };
-
-  function alreadyInStore(storeId: number) {
-    return !!instances[storeId];
-  }
-
-  function getFromStore(storeId: number) {
-    let instance = instances[storeId];
-    if (!instance) {
-      instance = instances[storeId] = initialize();
-    }
-    return instance;
-  }
-
-  function deleteFromStore(storeId: number) {
-    delete instances[storeId];
-  }
+  return atomBase(initialize);
 
   function initialize(): IAtomInstance<State, Actions> {
     const subject = new BehaviorSubject(initialState);
@@ -65,15 +37,71 @@ export function atom<State, Actions>(
         }
       },
     });
-    return { _: { getCurrentValue, subscribe, actions } };
+    return {
+      _: {
+        id: getNextAtomInstanceId(),
+        getCurrentValue,
+        subscribe,
+        actions,
+      },
+    };
+  }
+}
+
+export function atomBase<State, Actions>(
+  initialize: (store: AtomStore) => IAtomInstance<State, Actions>
+): IAtom<State, Actions> {
+  // Conceptually, atomInstances lives in atomStore,
+  // but in implementation,
+  // atom hold reference to all its atomInstances
+  // instead of store hold reference to atomInstances.
+  // This is good for garbage collection:
+  // When no one hold the reference to atom,
+  // all atomInstances of it will be garbage-collected.
+  const instances: {
+    [storeId: number]: IAtomInstance<State, Actions>;
+  } = {};
+
+  return {
+    _: {
+      initializeForStore,
+      getFromStore,
+      alreadyInStore,
+      deleteFromStore,
+    },
+  };
+
+  function alreadyInStore({ storeId }: AtomStore) {
+    return !!instances[storeId];
+  }
+
+  function initializeForStore(store: AtomStore) {
+    const { storeId } = store;
+    if (alreadyInStore(store)) {
+      throw new Error(`atom has already been initialized in this store`);
+    }
+    instances[storeId] = initialize(store);
+  }
+
+  function getFromStore({ storeId }: AtomStore) {
+    const instance = instances[storeId];
+    if (!instance) {
+      throw new Error(`atom has not been initialized in this store yet`);
+    }
+    return instance;
+  }
+
+  function deleteFromStore({ storeId }: AtomStore) {
+    delete instances[storeId];
   }
 }
 
 export interface IAtom<State, Actions> {
   _: {
-    getFromStore: (storeId: number) => IAtomInstance<State, Actions>;
-    alreadyInStore: (storeId: number) => boolean;
-    deleteFromStore: (storeId: number) => void;
+    initializeForStore: (store: AtomStore) => void;
+    getFromStore: (store: AtomStore) => IAtomInstance<State, Actions>;
+    alreadyInStore: (store: AtomStore) => boolean;
+    deleteFromStore: (store: AtomStore) => void;
   };
 }
 
@@ -88,6 +116,7 @@ export type ISetter<State> = (
 
 export interface IAtomInstance<State, Actions> {
   _: {
+    id: number;
     getCurrentValue: () => State;
     subscribe: (callback: any) => () => void;
     actions: Actions;
