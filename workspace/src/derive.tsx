@@ -1,6 +1,6 @@
 import { Subject } from "rxjs";
 import { atomBase, getNextAtomInstanceId } from "./atom";
-import { IAtom, IAtomInstance } from "./atom";
+import type { IAtom, IAtomInstance } from "./atom";
 import { AtomStore } from "./store";
 
 export function derive<State>(

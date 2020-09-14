@@ -1,8 +1,8 @@
 import React from "react";
 import { counterAtom } from "./atom";
-import { createAtomStore } from "../../src";
+import { createStore } from "../../src";
 
-const store = createAtomStore();
+const store = createStore();
 
 interface IProps {}
 

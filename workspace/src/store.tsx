@@ -24,7 +24,7 @@ export class AtomStore {
   }
 }
 
-export function createAtomStore(): IAtomStore {
+export function createStore(): IAtomStore {
   const storeCtx = React.createContext((null as unknown) as AtomStore);
 
   const Provider: React.FC = ({ children }) => {
@@ -84,10 +84,6 @@ export function createAtomStore(): IAtomStore {
 
   return { Provider, withProvider, useAtomValue, useAtomActions, useAtom };
 }
-
-function createSingletonAtomStore() {}
-
-// function derived() {}
 
 export interface IAtomStore {
   useAtomValue: <State, Actions>(atom: IAtom<State, Actions>) => State;
