@@ -3,9 +3,16 @@ import { atomBase, getNextAtomInstanceId } from "./atom";
 import { IAtom, IAtomInstance } from "./atom";
 import { AtomStore } from "./store";
 
+export function derive<State>(
+  getter: (getAtomValue: GetAtomValue) => State
+): IAtom<State, null>;
 export function derive<State, Actions>(
   getter: (getAtomValue: GetAtomValue) => State,
   createActions: ICreateActions<State, Actions>
+): IAtom<State, Actions>;
+export function derive<State, Actions>(
+  getter: (getAtomValue: GetAtomValue) => State,
+  createActions?: ICreateActions<State, Actions>
 ): IAtom<State, Actions> {
   return atomBase(initialize);
 
@@ -18,10 +25,12 @@ export function derive<State, Actions>(
     const initialState = computeValue();
     let currentValue = initialState;
     const subject = new Subject();
-    const actions = createActions({
-      get,
-      getActions,
-    });
+    const actions = createActions
+      ? createActions({
+          get,
+          getActions,
+        })
+      : ((null as unknown) as Actions);
 
     return {
       _: {
