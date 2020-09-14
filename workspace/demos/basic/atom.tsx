@@ -1,4 +1,4 @@
-import { atom, derive } from "../../src";
+import { atom } from "../../src";
 
 export const counterAtom = atom(
   {

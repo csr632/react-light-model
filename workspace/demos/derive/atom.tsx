@@ -26,3 +26,14 @@ export const counterAtom = atom(
 export const doubleCounterAtom = derive((get) => {
   return { val: get(counterAtom).val * 2 };
 });
+
+export const plusTwoCounterAtom = derive(
+  (get) => {
+    return { val: get(counterAtom).val + 2 };
+  },
+  ({ getActions }) => {
+    return {
+      addTwo: () => getActions(counterAtom).inc(2),
+    };
+  }
+);
