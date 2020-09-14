@@ -2,7 +2,7 @@
 // useMutableSource is still in react@experimental
 
 import React, { useContext, useState, useEffect } from "react";
-import { useSubscription } from "use-subscription";
+import us from "use-subscription";
 import type { IAtom, IAtomInstance } from "./atom";
 
 let nextStoreId = 1;
@@ -55,7 +55,7 @@ export function createAtomStore(): IAtomStore {
 
   function useAtomValue<State, Actions>(atom: IAtom<State, Actions>) {
     const atomInstance = useAtomInstance(atom);
-    const atomValue: State = useSubscription({
+    const atomValue: State = us.useSubscription({
       getCurrentValue: atomInstance._.getCurrentValue,
       subscribe: atomInstance._.subscribe,
     });

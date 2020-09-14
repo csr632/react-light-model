@@ -5,7 +5,7 @@
   "main": "out/index.js",
   "scripts": {
     "dev": "vite serve -c ./vite.config.ts",
-    "parcel": "parcel serve ./index.html",
+    "parcel": "parcel serve ./index-parcel.html",
     "debug": "node --inspect ./node_modules/vite/bin/vite serve -c ./vite.config.ts",
     "cp": "copyfiles -u 2 \"./workspace/src/**/*.css\" ./out",
     "prepare": "rm -rf ./out && tsc -p ./workspace/src && npm run cp"
@@ -21,13 +21,13 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@pika/react": "^16.13.1",
+    "@pika/react-dom": "^16.13.1",
     "rxjs": "^7.0.0-beta.5",
     "use-subscription": "^1.4.1"
   },
   "devDependencies": {
     "@mdx-js/react": "^1.6.16",
-    "@pika/react": "^16.13.1",
-    "@pika/react-dom": "^16.13.1",
     "@types/react": "^16.9.49",
     "@types/react-dom": "^16.9.8",
     "@types/react-router-dom": "^5.1.5",

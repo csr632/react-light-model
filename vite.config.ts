@@ -7,10 +7,14 @@ import * as path from "path";
 module.exports = {
   jsx: "react",
   plugins: [vpr, mdx(), pages(path.join(__dirname, "./workspace/demos"))],
-  root: path.join(__dirname, "./workspace"),
+  root: path.join(__dirname),
   optimizeDeps: {
-    include: ["styled-components", "@mdx-js/react", "react-router-dom"],
-    exclude: ["@types/react", "@types/react-dom", "react-dom", "react"],
+    include: [
+      "styled-components",
+      "@mdx-js/react",
+      "react-router-dom",
+      "use-subscription",
+    ],
   },
   minify: false,
 } as UserConfig;
