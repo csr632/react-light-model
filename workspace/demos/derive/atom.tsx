@@ -29,11 +29,19 @@ export const doubleCounterAtom = derive((get) => {
 
 export const plusTwoCounterAtom = derive(
   (get) => {
-    return { val: get(counterAtom).val + 2 };
+    return { val: get(doubleCounterAtom).val + 2 };
   },
-  ({ getActions }) => {
+  ({ getActions, get }) => {
     return {
-      addTwo: () => getActions(counterAtom).inc(2),
+      addTwo: () => {
+        console.log(`You can get current atom's state`, get());
+        console.log(`You can get other atom's state`, get(doubleCounterAtom));
+        getActions(counterAtom).inc(2);
+        console.log(
+          `all atoms' state is immediately updated after actions`,
+          get()
+        );
+      },
     };
   }
 );
