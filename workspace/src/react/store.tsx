@@ -96,6 +96,7 @@ export function createStore(): IReactStore {
   // the advantage of useBatchedSubscribe is that
   // selectAtoms can be dynamic
   function useBatchedSubscribe<
+    // https://github.com/microsoft/TypeScript/pull/26063#issuecomment-461874655
     AtomArr extends [IAtom<any, any>, ...IAtom<any, any>[]]
   >(selectAtoms: AtomArr) {
     const atom = useMemo(
