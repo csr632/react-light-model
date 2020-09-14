@@ -1,16 +1,20 @@
+import { useMemo } from "react";
 import us from "use-subscription";
-import { IAtom } from "./atom";
-import { AtomStore } from "./store";
+import { IAtom } from "../atom";
+import { AtomStore } from "../store";
 
 export function createSingletonStore() {
   const store = new AtomStore();
 
   function useAtomValue<State, Actions>(atom: IAtom<State, Actions>) {
     const atomInstance = store.getAtomInstance(atom);
-    const atomValue: State = us.useSubscription({
-      getCurrentValue: atomInstance._.getCurrentValue,
-      subscribe: atomInstance._.subscribe,
-    });
+    const param = useMemo(() => {
+      return {
+        getCurrentValue: atomInstance._.getCurrentValue,
+        subscribe: atomInstance._.subscribe,
+      };
+    }, [atomInstance]);
+    const atomValue: State = us.useSubscription(param);
     return atomValue;
   }
 

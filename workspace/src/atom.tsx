@@ -46,8 +46,13 @@ export function atom<State, Actions>(
         getCurrentValue,
         subscribe,
         actions,
+        onDestroy,
       },
     };
+
+    function onDestroy() {
+      subject.complete();
+    }
   }
 }
 
@@ -123,5 +128,6 @@ export interface IAtomInstance<State, Actions> {
     getCurrentValue: () => State;
     subscribe: (callback: any) => () => void;
     actions: Actions;
+    onDestroy?: () => void;
   };
 }

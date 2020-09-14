@@ -3,25 +3,46 @@ import { atomBase, getNextAtomInstanceId } from "./atom";
 import type { IAtom, IAtomInstance } from "./atom";
 import { AtomStore } from "./store";
 
+interface IOpts<State, Actions> {
+  actions?: ICreateActions<State, Actions>;
+  isSame?: (prev: State, current: State) => boolean;
+}
+
 export function derive<State>(
-  getter: (getAtomValue: GetAtomValue) => State
-): IAtom<State, null>;
+  getter: (getAtomValue: IGetAtomValue) => State
+): IAtom<State, never>;
 export function derive<State, Actions>(
-  getter: (getAtomValue: GetAtomValue) => State,
+  getter: (getAtomValue: IGetAtomValue) => State,
   createActions: ICreateActions<State, Actions>
 ): IAtom<State, Actions>;
-export function derive<State, Actions>(
-  getter: (getAtomValue: GetAtomValue) => State,
-  createActions?: ICreateActions<State, Actions>
+// Why not put getter in the opts argument?
+// Because that will make typescript fail to inter the type for State.
+export function derive<State, Actions = never>(
+  getter: (getAtomValue: IGetAtomValue) => State,
+  opts: IOpts<State, Actions>
+): IAtom<State, Actions>;
+
+export function derive<State, Actions = never>(
+  getter: (getAtomValue: IGetAtomValue) => State,
+  optsOrCreateActions?:
+    | undefined
+    | ICreateActions<State, Actions>
+    | IOpts<State, Actions>
 ): IAtom<State, Actions> {
+  const opts: IOpts<State, Actions> = (() => {
+    if (!optsOrCreateActions) return {};
+    if (typeof optsOrCreateActions === "function") {
+      return {
+        actions: optsOrCreateActions,
+      };
+    }
+    return optsOrCreateActions;
+  })();
+  const { actions: createActions, isSame = (a, b) => a === b } = opts;
   return atomBase(initialize);
 
   function initialize(store: AtomStore): IAtomInstance<State, Actions> {
-    const deps: {
-      [id: string]: {
-        unsubscribe: () => void;
-      };
-    } = {};
+    let depSubscriptions: IDepSubscriptions = {};
     const initialState = computeValue();
     let currentValue = initialState;
     const subject = new Subject();
@@ -38,6 +59,7 @@ export function derive<State, Actions>(
         getCurrentValue,
         subscribe,
         actions,
+        onDestroy,
       },
     };
 
@@ -52,34 +74,19 @@ export function derive<State, Actions>(
 
     // compute value and collect deps
     function computeValue() {
-      const newDeps: { [id: string]: IAtomInstance<any, any> } = {};
-      const value = getter(getAtomValue);
-      Object.keys(deps).forEach((oldDepId) => {
-        if (!newDeps[oldDepId]) {
-          deps[oldDepId].unsubscribe();
-          delete deps[oldDepId];
+      const { deps: newDeps, value } = computeValueAndCollectDeps(
+        getter,
+        store
+      );
+      depSubscriptions = subscribeDeps(depSubscriptions, newDeps, () => {
+        const nextValue = computeValue();
+        if (!isSame(getCurrentValue(), nextValue)) {
+          currentValue = nextValue;
+          subject.next(null);
         }
       });
-      Object.keys(newDeps).forEach((newDepId) => {
-        if (!deps[newDepId]) {
-          deps[newDepId] = {
-            unsubscribe: newDeps[newDepId]._.subscribe(() => {
-              const nextValue = computeValue();
-              if (nextValue !== getCurrentValue()) {
-                currentValue = nextValue;
-                subject.next(null);
-              }
-            }),
-          };
-        }
-      });
-      return value;
 
-      function getAtomValue(atom: IAtom<any, any>) {
-        const atomInstace = store.getAtomInstance(atom);
-        if (!newDeps[atomInstace._.id]) newDeps[atomInstace._.id] = atomInstace;
-        return atomInstace._.getCurrentValue();
-      }
+      return value;
     }
     function getCurrentValue() {
       return currentValue;
@@ -88,10 +95,61 @@ export function derive<State, Actions>(
       const subscription = subject.subscribe(callback);
       return () => subscription.unsubscribe();
     }
+    function onDestroy() {
+      Object.values(depSubscriptions).forEach(({ unsubscribe }) => {
+        unsubscribe();
+      });
+      subject.complete();
+    }
   }
 }
 
-type GetAtomValue = <State>(atom: IAtom<State, any>) => State;
+export function computeValueAndCollectDeps<State>(
+  getter: (getAtomValue: IGetAtomValue) => State,
+  store: AtomStore
+) {
+  const deps: { [id: string]: IAtomInstance<any, any> } = {};
+  const value = getter(getAtomValue);
+  return { value, deps };
+
+  function getAtomValue(atom: IAtom<any, any>) {
+    const atomInstace = store.getAtomInstance(atom);
+    if (!deps[atomInstace._.id]) deps[atomInstace._.id] = atomInstace;
+    return atomInstace._.getCurrentValue();
+  }
+}
+
+export function subscribeDeps(
+  oldDepSubscriptions: IDepSubscriptions,
+  newDeps: IDeps,
+  callback: () => void
+) {
+  const subscriptions = { ...oldDepSubscriptions };
+  Object.keys(subscriptions).forEach((oldDepId) => {
+    if (!newDeps[oldDepId]) {
+      subscriptions[oldDepId].unsubscribe();
+      delete subscriptions[oldDepId];
+    }
+  });
+  Object.keys(newDeps).forEach((newDepId) => {
+    if (!subscriptions[newDepId]) {
+      subscriptions[newDepId] = {
+        unsubscribe: newDeps[newDepId]._.subscribe(() => {
+          callback();
+        }),
+      };
+    }
+  });
+  return subscriptions;
+}
+
+type IDeps = { [id: string]: IAtomInstance<any, any> };
+type IDepSubscriptions = {
+  [id: string]: {
+    unsubscribe: () => void;
+  };
+};
+export type IGetAtomValue = <State>(atom: IAtom<State, any>) => State;
 export type ICreateActions<State, Actions> = (helpers: {
   get: {
     (): State;
