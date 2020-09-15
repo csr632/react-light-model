@@ -6,16 +6,16 @@ export function observableAtom<Value>(
   observable: Observable<Value>,
   initialValue: Value
 ) {
-  let currentState: Value = initialValue;
-  const notify = new Subject();
-  observable.subscribe((nextVal) => {
-    currentState = nextVal;
-    notify.next(null);
-  });
-
   return atomBase(initialize);
 
   function initialize(): IAtomInstance<Value, null> {
+    let currentState: Value = initialValue;
+    const notify = new Subject();
+    const sub = observable.subscribe((nextVal) => {
+      currentState = nextVal;
+      notify.next(null);
+    });
+
     return {
       _: {
         id: getNextAtomInstanceId(),
@@ -25,15 +25,17 @@ export function observableAtom<Value>(
         onDestroy,
       },
     };
-  }
-  function getCurrentValue() {
-    return currentState;
-  }
-  function subscribe(callback: any) {
-    const subscription = notify.subscribe(callback);
-    return () => subscription.unsubscribe();
-  }
-  function onDestroy() {
-    notify.complete();
+
+    function getCurrentValue() {
+      return currentState;
+    }
+    function subscribe(callback: any) {
+      const subscription = notify.subscribe(callback);
+      return () => subscription.unsubscribe();
+    }
+    function onDestroy() {
+      notify.complete();
+      sub.unsubscribe();
+    }
   }
 }

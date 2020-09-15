@@ -3,8 +3,8 @@ import us from "use-subscription";
 
 import { AtomStore } from "../store";
 import type { IAtom } from "../atom";
-import { asyncAtom, AsyncState } from "../async";
 import { derive } from "../derive";
+import { FetcherAtomState } from "../fetcherAtom";
 
 export function createStore(): IReactStore {
   const storeCtx = React.createContext((null as unknown) as AtomStore);
@@ -107,19 +107,16 @@ export function createStore(): IReactStore {
     return useAtomValue(atom);
   }
 
-  /**
-   * create async atom based on props
-   */
-  function useAsyncAtom<Args extends readonly any[], Return extends any>(
-    asyncFn: (...args: Args) => Promise<Return>,
-    ...args: Args
+
+  function useAsyncAtom<Atom extends IAtom<FetcherAtomState<any>, any>>(
+    atom: Atom,
   ) {
     const [currentAtom, setCurrentAtom] = useState<
-      IAtom<AsyncState<Return>, null>
+      IAtom<PromiseAtomState<Return>, null>
     >(dummyAsyncAtom);
 
     useEffect(() => {
-      const newAtom = asyncAtom(asyncFn(...args));
+      const newAtom = promiseAtom(asyncFn(...args));
       setCurrentAtom(newAtom);
     }, [asyncFn, ...args]);
 
@@ -129,7 +126,7 @@ export function createStore(): IReactStore {
   return { Provider, withProvider, useAtomValue, useAtomActions, useAtom };
 }
 
-const dummyAsyncAtom = asyncAtom(new Promise<any>(() => null));
+// const dummyAsyncAtom = promiseAtom(new Promise<any>(() => null));
 
 export interface IReactStore {
   useAtomValue: <State, Actions>(atom: IAtom<State, Actions>) => State;

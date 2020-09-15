@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { counterAtom } from "./atom";
 import { atom, createStore } from "../../src";
 import { fakeAPI } from "./fakeAPI";
@@ -7,14 +7,18 @@ const store = createStore();
 
 interface IProps {}
 
-
+const fetchAtom = asyncAtom(fakeAPI)
 
 const Demo: React.FC<IProps> = store.withProvider((props) => {
   const [pageNum, setPageNum] = useState(1);
   const [dataAtom, setDataAtom] = useState(() => {
     return atom(fakeAPI(pageNum));
   });
-  const [state, actions] = store.useAtom(counterAtom);
+  const actions = store.useAsyncAtom(fetchAtom, fetchParam);
+
+  useEffect(() => {
+    fetchAtom()
+  }, [fetchParam])
   return (
     <div>
       <h2>Basic demo</h2>
