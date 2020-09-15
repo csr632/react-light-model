@@ -4,12 +4,7 @@ import us from "use-subscription";
 import { AtomStore } from "../store";
 import type { IAtom } from "../atom";
 import { asyncAtom, AsyncState } from "../async";
-import {
-  computeValueAndCollectDeps,
-  derive,
-  IGetAtomValue,
-  subscribeDeps,
-} from "../derive";
+import { derive } from "../derive";
 
 export function createStore(): IReactStore {
   const storeCtx = React.createContext((null as unknown) as AtomStore);
@@ -23,6 +18,9 @@ export function createStore(): IReactStore {
       // all atomInstances in it should be garbage-collected.
       return () => storeInstance.destroy();
     }, []);
+
+    const existStore = useContext(storeCtx);
+    if (existStore) return <>{children}</>;
 
     return (
       <storeCtx.Provider value={storeInstance}>{children}</storeCtx.Provider>
