@@ -8,8 +8,15 @@ let nextStoreId = 1;
 export class AtomStore {
   private readonly atoms: IAtom<any, any>[] = [];
   public readonly storeId = nextStoreId++;
+
+  // private parentResolveCache = {}
+  // inThisOrParent
+
   getAtomInstance<State, Actions>(atom: IAtom<State, Actions>) {
     if (!atom._.alreadyInStore(this)) {
+      // if (this.parent && atom._.alreadyInStore(this.parent)) {
+      //   return atom._.getFromStore(this.parent);
+      // }
       this.atoms.push(atom);
       atom._.initializeForStore(this);
     }
@@ -24,4 +31,5 @@ export class AtomStore {
       atom._.deleteFromStore(this);
     });
   }
+  constructor(private parents?: AtomStore[]) {}
 }
