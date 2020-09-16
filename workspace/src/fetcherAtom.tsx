@@ -15,7 +15,8 @@ interface IFetchHelpers {
 }
 
 export function fetcherAtom<Result>(
-  fetcher: (helpers: IFetchHelpers) => Promise<Result>
+  fetcher: (helpers: IFetchHelpers) => Promise<Result>,
+  initialState?: Result
 ) {
   return atomBase(initialize);
 
@@ -23,7 +24,7 @@ export function fetcherAtom<Result>(
     store: AtomStore
   ): IAtomInstance<IFetcherAtomState<Result>, null> {
     let currentState: IFetcherAtomState<Result> = {
-      data: null,
+      data: initialState ?? null,
       loading: false,
       error: null,
       trigger,
