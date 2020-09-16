@@ -11,6 +11,10 @@ export function observableAtom<Value>(
   function initialize(): IAtomInstance<Value, null> {
     let currentState: Value = initialValue;
     const notify = new Subject();
+    // FIXME initialize should be pure
+    // Lazy Initialization: https://gist.github.com/sebmarkbage/75f0838967cd003cd7f9ab938eb1958f#lazy-initialization
+    // We should create a phase named initialize-effect
+    // and put side-effect in it
     const sub = observable.subscribe((nextVal) => {
       currentState = nextVal;
       notify.next(null);

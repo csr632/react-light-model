@@ -1,35 +1,40 @@
-import { from, Subject } from "rxjs";
-import { map } from "rxjs/operators";
-import { atomBase, getNextAtomInstanceId, IAtom, IAtomInstance } from "./atom";
-import { computeValueAndCollectDeps, IGetAtomValue } from "./derive";
-import { observableAtom } from "./observable";
+import { Subject } from "rxjs";
+import { atomBase, getNextAtomInstanceId, IAtomInstance } from "./atom";
+import { IGetAtomValue } from "./derive";
 import { AtomStore } from "./store";
 
-export class FetcherAtomState<Value> {
-  private deps: {
-    [id: string]: { ins: IAtomInstance<any, any>; unsub: () => void };
-  } = {};
-
-  public loading: boolean = true;
-  public value: Value | undefined;
+export interface IFetcherAtomState<Data> {
+  data: Data | null;
+  loading: boolean;
+  error: any | null;
+  trigger: () => void;
 }
 
-export function fetcherAtom<Args extends readonly any[], Result>(
-  fetcher: (
-    helpers: { getAtomValue: IGetAtomValue; canceled: boolean },
-    ...args: Args
-  ) => Promise<Result>
+interface IFetchHelpers {
+  getAtomValue: IGetAtomValue;
+}
+
+export function fetcherAtom<Result>(
+  fetcher: (helpers: IFetchHelpers) => Promise<Result>
 ) {
   return atomBase(initialize);
 
-  type Value = FetcherAtomState<Result>;
-
-  function initialize(store: AtomStore): IAtomInstance<Value, null> {
-    let currentState: Value = new FetcherAtomState<Result>();
-
-    // let currentLoadingPromise = startFetch();
-
+  function initialize(
+    store: AtomStore
+  ): IAtomInstance<IFetcherAtomState<Result>, null> {
+    let currentState: IFetcherAtomState<Result> = {
+      data: null,
+      loading: false,
+      error: null,
+      trigger,
+    };
     const notify = new Subject();
+
+    let currentLoadingProcess:
+      | {
+          cancle: () => void;
+        }
+      | undefined;
 
     return {
       _: {
@@ -52,27 +57,78 @@ export function fetcherAtom<Args extends readonly any[], Result>(
       notify.complete();
     }
 
-    // start value and collect deps
-    function startFetch(onReFetch: () => void, ...args: Args) {
+    function trigger() {
+      if (currentLoadingProcess) currentLoadingProcess.cancle();
+      currentState = {
+        data: currentState.data,
+        loading: true,
+        error: currentState.error,
+        trigger,
+      };
+      notify.next(null);
+
+      currentLoadingProcess = startFetch(onSuccess, onError, trigger);
+    }
+
+    function onSuccess(res: Result) {
+      currentState = {
+        data: res,
+        loading: false,
+        error: null,
+        trigger,
+      };
+      notify.next(null);
+    }
+
+    function onError(error: any) {
+      currentState = {
+        data: null,
+        loading: false,
+        error,
+        trigger,
+      };
+      notify.next(null);
+    }
+
+    // start fetch value and collect deps
+    function startFetch(
+      onSucess: (res: Result) => void,
+      onError: (error: any) => void,
+      onReFetch: () => void
+    ) {
       const deps: {
         [id: string]: { ins: IAtomInstance<any, any>; unsub: () => void };
       } = {};
-      let cancled = false;
 
-      const getAtomValue: IGetAtomValue = (atom) => {
-        const atomInstace = store.getAtomInstance(atom);
-        if (!deps[atomInstace._.id] && !cancled) {
-          const sub = atomInstace._.subscribe(reFetch);
-          deps[atomInstace._.id] = { ins: atomInstace, unsub: sub };
-        }
-        return atomInstace._.getCurrentValue();
+      let cancled = false;
+      const fetchHelpers: IFetchHelpers = {
+        getAtomValue(atom) {
+          const atomInstace = store.getAtomInstance(atom);
+          if (!deps[atomInstace._.id] && !cancled) {
+            const sub = atomInstace._.subscribe(reFetch);
+            deps[atomInstace._.id] = { ins: atomInstace, unsub: sub };
+          }
+          return atomInstace._.getCurrentValue();
+        },
       };
 
-      const promise = fetcher(getAtomValue, ...args);
+      fetcher(fetchHelpers).then(
+        (res) => {
+          if (!cancled) {
+            onSucess(res);
+          }
+        },
+        (error) => {
+          if (!cancled) {
+            onError(error);
+          }
+        }
+      );
 
-      return { promise, cancle };
+      return { cancle };
 
       function reFetch() {
+        cancle();
         onReFetch();
       }
 
