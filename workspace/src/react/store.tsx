@@ -3,40 +3,65 @@ import us from "use-subscription";
 
 import { AtomStore } from "../store";
 import type { IAtom } from "../atom";
-import { derive } from "../derive";
-import { FetcherAtomState } from "../fetcherAtom";
 
 export function createStore(): IReactStore {
-  const storeCtx = React.createContext((null as unknown) as AtomStore);
+  const storeCtx = React.createContext<AtomStore | null>(null);
 
-  const Provider: React.FC = ({ children }) => {
-    // Store instance lives in the provider component
-    const storeInstance = useState(() => new AtomStore())[0];
-
-    useEffect(() => {
-      // When the store component is unmounted,
-      // all atomInstances in it should be garbage-collected.
-      return () => storeInstance.destroy();
-    }, []);
-
-    const existStore = useContext(storeCtx);
-    if (existStore) return <>{children}</>;
-
-    return (
-      <storeCtx.Provider value={storeInstance}>{children}</storeCtx.Provider>
-    );
-  };
-
-  const withProvider = <Props extends any>(
+  function withProvider<Props extends any>(
     Wrapped: React.ComponentType<Props>
-  ): React.FC<Props> => {
-    const HOC: React.FC<Props> = (props) => (
-      <Provider>
-        <Wrapped {...props} />
-      </Provider>
-    );
-    return HOC;
-  };
+  ): React.FC<Props>;
+  function withProvider<Props extends any>(
+    ownAtomInstance: IAtom<any, any>[],
+    Wrapped: React.ComponentType<Props>
+  ): React.FC<Props>;
+  function withProvider<Props extends any>(
+    arg1: React.ComponentType<Props> | IAtom<any, any>[],
+    arg2?: React.ComponentType<Props>
+  ): React.FC<Props> {
+    const { Wrapped, ownAtomInstance } = (() => {
+      if (typeof arg1 === "function") {
+        return { Wrapped: arg1, ownAtomInstance: null };
+      } else if (Array.isArray(arg1) && typeof arg2 === "function") {
+        return { Wrapped: arg2!, ownAtomInstance: arg1 };
+      } else {
+        throw new Error(`invalid arguments for withProvider`);
+      }
+    })();
+
+    const Wrapper: React.FC<Props> = (props) => {
+      const parentStore = useContext(storeCtx);
+      // Store instance lives in the provider component
+      const storeInstance = useState(() => {
+        if (parentStore && ownAtomInstance) {
+          return new AtomStore({
+            store: parentStore,
+            atoms: [
+              ...Object.values(parentStore.parent?.atoms ?? {}),
+              ...ownAtomInstance,
+            ],
+          });
+        }
+        return new AtomStore();
+      })[0];
+
+      useEffect(() => {
+        // When the store component is unmounted,
+        // all atomInstances in it should be garbage-collected.
+        return () => storeInstance.destroy();
+      }, []);
+
+      if (parentStore && !ownAtomInstance) {
+        return <Wrapped {...props} />;
+      }
+
+      return (
+        <storeCtx.Provider value={storeInstance}>
+          <Wrapped {...props} />
+        </storeCtx.Provider>
+      );
+    };
+    return Wrapper;
+  }
 
   function useAtomValue<State, Actions>(atom: IAtom<State, Actions>) {
     const atomInstance = useAtomInstance(atom);
@@ -75,62 +100,11 @@ export function createStore(): IReactStore {
     return atomInstance;
   }
 
-  // function getAtomValue(atom: IAtom<any, any>) {
-  //   const atomInstace = store.getAtomInstance(atom);
-  //   if (!newDeps[atomInstace._.id]) newDeps[atomInstace._.id] = atomInstace;
-  //   return atomInstace._.getCurrentValue();
-  // }
-
-  // function useCallAction() {}
-  // In order to be performant, getter1 should be stable (it shouldn't use props)
-  type ResolveAtom<Atom> = Atom extends IAtom<infer V, any> ? V : never;
-  type ResolveAtomArr<
-    AtomArr extends [IAtom<any, any>, ...IAtom<any, any>[]]
-  > = {
-    [Index in keyof AtomArr]: ResolveAtom<AtomArr[Index]>;
-  };
-
-  // Compared with "useAtomValue for multiple times",
-  // the advantage of useBatchedSubscribe is that
-  // selectAtoms can be dynamic
-  function useBatchedSubscribe<
-    // https://github.com/microsoft/TypeScript/pull/26063#issuecomment-461874655
-    AtomArr extends [IAtom<any, any>, ...IAtom<any, any>[]]
-  >(selectAtoms: AtomArr) {
-    const atom = useMemo(
-      () =>
-        derive<ResolveAtomArr<AtomArr>>((get) => {
-          return selectAtoms.map(get) as any;
-        }),
-      [...selectAtoms]
-    );
-    return useAtomValue(atom);
-  }
-
-
-  function useAsyncAtom<Atom extends IAtom<FetcherAtomState<any>, any>>(
-    atom: Atom,
-  ) {
-    const [currentAtom, setCurrentAtom] = useState<
-      IAtom<PromiseAtomState<Return>, null>
-    >(dummyAsyncAtom);
-
-    useEffect(() => {
-      const newAtom = promiseAtom(asyncFn(...args));
-      setCurrentAtom(newAtom);
-    }, [asyncFn, ...args]);
-
-    return currentAtom;
-  }
-
-  return { Provider, withProvider, useAtomValue, useAtomActions, useAtom };
+  return { withProvider, useAtomValue, useAtomActions, useAtom };
 }
-
-// const dummyAsyncAtom = promiseAtom(new Promise<any>(() => null));
 
 export interface IReactStore {
   useAtomValue: <State, Actions>(atom: IAtom<State, Actions>) => State;
-  Provider: React.FC<{}>;
   useAtomActions: <State, Actions>(atom: IAtom<State, Actions>) => Actions;
   useAtom<State, Actions>(
     atom: IAtom<State, Actions>

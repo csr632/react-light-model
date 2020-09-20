@@ -6,9 +6,9 @@ import type { IAtom, IAtomInstance } from "./atom";
 let nextStoreId = 1;
 
 export class AtomStore {
-  private readonly parent?: {
+  public readonly parent?: {
     store: AtomStore;
-    atoms: { [id: number]: true };
+    atoms: { [id: number]: IAtom<any, any> };
   };
   private readonly atoms: IAtom<any, any>[] = [];
   public readonly storeId = nextStoreId++;
@@ -37,9 +37,9 @@ export class AtomStore {
 
   constructor(parent?: { store: AtomStore; atoms: IAtom<any, any>[] }) {
     if (parent) {
-      const atoms: { [id: number]: true } = {};
+      const atoms: { [id: number]: IAtom<any, any> } = {};
       parent.atoms.forEach((atom) => {
-        atoms[atom._.id] = true;
+        atoms[atom._.id] = atom;
       });
       this.parent = { store: parent.store, atoms };
     }
