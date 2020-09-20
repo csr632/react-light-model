@@ -56,6 +56,8 @@ export function atom<State, Actions>(
   }
 }
 
+let nextAtomId = 1;
+
 export function atomBase<State, Actions>(
   initialize: (store: AtomStore) => IAtomInstance<State, Actions>
 ): IAtom<State, Actions> {
@@ -72,6 +74,7 @@ export function atomBase<State, Actions>(
 
   return {
     _: {
+      id: nextAtomId++,
       initializeForStore,
       getFromStore,
       alreadyInStore,
@@ -106,6 +109,7 @@ export function atomBase<State, Actions>(
 
 export interface IAtom<State, Actions> {
   _: {
+    id: number;
     initializeForStore: (store: AtomStore) => void;
     getFromStore: (store: AtomStore) => IAtomInstance<State, Actions>;
     alreadyInStore: (store: AtomStore) => boolean;

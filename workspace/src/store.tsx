@@ -1,22 +1,25 @@
 // we should use useMutableSource instead of use-subscription
 // useMutableSource is still in react@experimental
 
-import type { IAtom } from "./atom";
+import type { IAtom, IAtomInstance } from "./atom";
 
 let nextStoreId = 1;
 
 export class AtomStore {
+  private readonly parent?: {
+    store: AtomStore;
+    atoms: { [id: number]: true };
+  };
   private readonly atoms: IAtom<any, any>[] = [];
   public readonly storeId = nextStoreId++;
 
-  // private parentResolveCache = {}
-  // inThisOrParent
-
-  getAtomInstance<State, Actions>(atom: IAtom<State, Actions>) {
+  getAtomInstance<State, Actions>(
+    atom: IAtom<State, Actions>
+  ): IAtomInstance<State, Actions> {
+    if (this.parent?.atoms[atom._.id]) {
+      return this.parent.store.getAtomInstance(atom);
+    }
     if (!atom._.alreadyInStore(this)) {
-      // if (this.parent && atom._.alreadyInStore(this.parent)) {
-      //   return atom._.getFromStore(this.parent);
-      // }
       this.atoms.push(atom);
       atom._.initializeForStore(this);
     }
@@ -31,5 +34,14 @@ export class AtomStore {
       atom._.deleteFromStore(this);
     });
   }
-  constructor(private parents?: AtomStore[]) {}
+
+  constructor(parent?: { store: AtomStore; atoms: IAtom<any, any>[] }) {
+    if (parent) {
+      const atoms: { [id: number]: true } = {};
+      parent.atoms.forEach((atom) => {
+        atoms[atom._.id] = true;
+      });
+      this.parent = { store: parent.store, atoms };
+    }
+  }
 }
